@@ -1,15 +1,16 @@
-# Feature Tracking Analysis
-[<img src="resources/thumbnail.png" width="400">](https://youtu.be/ZyD1YPW1h4U)
+# 事件相机特征跟踪分析工具
 
-This repository implements the method for event-based feature tracking evaluation, used in our 2019 IJCV paper [**EKLT: Asynchronous, Photometric Feature Tracking using Events and Frames**](http://rpg.ifi.uzh.ch/docs/IJCV19_Gehrig.pdf) by [Daniel Gehrig](https://danielgehrig18.github.io/), [Henri Rebecq](http://henri.rebecq.fr), [Guillermo Gallego](http://www.guillermogallego.es), and [Davide Scaramuzza](http://rpg.ifi.uzh.ch/people_scaramuzza.html).
-Also check out our feature tracker [here](https://github.com/uzh-rpg/rpg_eklt).
+forked from **uzh-rpg/rpg_feature_tracking_analysis** [https://github.com/uzh-rpg/rpg_feature_tracking_analysis]。
 
-## Citation
+**增加了中文说明，并在代码中加入注释，便于理解与使用。**
 
-If you use this code in an academic context, please cite the following paper:
 
-Daniel Gehrig, Henri Rebecq, Guillermo Gallego, Davide Scaramuzza, "EKLT: Asynchronous Photometric Feature Tracking using Events and Frames", International Journal of Computer Vision (IJCV), 2019
-```bibtex
+
+# 0、引用
+
+如果用于学术文章，请引用如下论文。（尊重作者成果，这段儿我单独拎出来这段儿）
+
+```
 @Article{Gehrig19ijcv,
   author = {Daniel Gehrig and Henri Rebecq and Guillermo Gallego and Davide Scaramuzza},
   title = {EKLT: Asynchronous Photometric Feature Tracking using Events and Frames},
@@ -18,92 +19,78 @@ Daniel Gehrig, Henri Rebecq, Guillermo Gallego, Davide Scaramuzza, "EKLT: Asynch
 }
 ```
 
-## Overview  
-
-This repository implements the following two methods for evaluating ground truth feature tracks:
-
-* KLT-based feature tracking on frames synchronized with the events.
-* Feature tracking based on reprojection of landmarks
-
-This package handles the details of aligning feature tracks and initializing KLT features for the user and 
-offers the following functionality:
-
-* Evalutate your feature tracks using one of the methods above
-* Generate paper-ready plots of tracking error over time
-* Generate 3d space-times plots of the feature tracks
-* Generate video of feature tracks
-* Compare your feature tracks against other methods
-* Plots of tracking error for individual features
 
 
-1. [Installation](#installation)
-2. [How it Works](#how-it-works)
-3. [Preparing the Data](#preparing-the-data)
-4. [Running the Evaluation](#running-the-evaluation)
-5. [Compare Against other Methods](#compare-against-other-methods)
-6. [Visualize the Tracks](#visualize-the-tracks)
-7. [Plotting Data for Individual Tracks](#plotting-data-for-individual-tracks)
-8. [Try it Out](#try-it-out)
+# 1、安装
 
-## Installation
-
-The package is written in `python2`, tested on Ubuntu 18.04 and
-it requires an installation of ROS.
-To install, clone the repo and install the dependencies:
 ```bash
 git clone feature_tracking_anlaysis
 cd feature_tracking_analysis
-virtualenv venv
-source venv/bin/activate
+virtualenv venv					# 与下一条可选
+source venv/bin/activate		# 遇上一条可选
 pip install -r requirements.txt
 ```
-Here steps 3 and 4 are optional, and require the python `virtualenv` package which can be installed as follows:
- ```bash
-pip install virtualenv
+
+
+
+# 2、 运行示例
+
+```bash
+python evaluate_tracks.py --tracker_type KLT --file rel/path/to/tracks.txt --dataset rel/path/to/dataset.yaml --root path/where/to/find.bag
 ```
 
-## How it Works
+运行 evaluate_tracks.py 文件，需要提供参数至少需要4个：
 
-The evaluation of feature tracks can be split into roughly two steps: initialization of the ground truth tracker and tracking.
+`tracker_type`：选择使用KLT跟踪，或者重投影方式（一般不用），参数值只能是：KLT 或 reprojection
 
-For KLT-based ground truth, the algorithm performs the following steps: 
-1. for every feature track its initialization time is found
-2. the first gray-scale frame at or after initialization is found
-3. the x and y position of the feature is interpolated from the track, at the time of this frame.
-4. the KLT tracker tracks this feature until it is lost, updating the template after each frame.
+`file`：需要评估的特征跟踪文件（具体格式见 **3.1 数据准备**）
 
-For reprojection based ground truth, the following steps are performed:
-1. the initialization times and positions are found for each feature track
-2. using interpolation the depths and poses at the time of each initialization are found.
-3. using the poses, depths and camera calibration, the features are back-projected 
-4. for each subsequent pose the landmarks are reprojected into the image, yielding feature tracks.
-5. features are discarded whenever they leave the image.
+`dataset`：配置文件，以 .yaml 或 yml 解为的配置文件（配置方式见 **3.2 数据集配置文件**）
 
-Note that for reprojection based tracking we do not support camera distortions. This is usually not a 
-problem since this tracking algorithm will be used mostly in simulation, where camera distortion can be 
-controlled. In addition, occlusion based feature discarding is not supported. This means that tracking
- works best in convex scenes.
-You may use the event camera simulator [ESIM](http://rpg.ifi.uzh.ch/esim) to generate your own evaluation sequences with ground truth depth maps and camera poses.
+`root`：数据集文件，评估时根据这个数据集文件(.bag)进行计算KLT跟踪
 
-For more details concerning error and feature age calculation you can refer to the paper [here](http://rpg.ifi.uzh.ch/docs/ECCV18_Gehrig.pdf).
+以及部分可选参数：
 
-## Preparing the Data
+`error_threshold`：计算误差时，超过阈值认为丢失。默认为10 pixels
 
-The user must provide the feature tracks that are to be evaluated in form of a `.txt` file.
-This file contains the position, feature id and timestamp of every feature update. Note that feature ids must be unique 
-and the timestamps increasing. Subpixel resolution is supported.
+`tracker_params`：跟踪参数，没有制定时默认采用 config 下的文件，制定了 KLT 的窗口大小、金字塔层数
+
+## 2.1 绘图
+
+运行时加上`--plot_3d` 或 `--plot_errors` 等参数，可以绘制好看的 pdf 图像。
+
+另外还有可选参数 `video_preview`，生成带有 gt 的视频。
+
+运行结果将在 `file` 文件所在文件中，创建 results 文件，进行保存。
+
+
+
+# 3、 文件配置
+
+## 3.1 数据准备
+
+评估的特征跟踪数据，需要按照如下形式进行存储：
 
 ```
 # feature_id timestamp x y
 25 1.403636580013555527e+09 125.827 15.615 
 13 1.403636580015467890e+09 20.453 90.142 
 ...
-``` 
-The images, poses, depth_maps and camera info used for ground truth generation must be provided in form of a rosbag.
-Images need to be in the `sensor_msgs/Image` message format, poses in the `geometry_msgs/PoseStamped` format and depth maps
-in the `sensor_msgs/Image` format, encoded as a `CV_32F` image.
+```
 
-The information about the topics and rosbag is provided by the user with a configuration file `dataset.yaml`
+其中每行依次为：特征id，时间戳，x、y坐标。
+
+这个文件对应运行时的 `file` 参数
+
+## 3.2 数据集配置文件
+
+配置文件指 xxx.yaml，需要指定：
+
+1. 数据集路径（很奇怪配置文件需要数据集路径，且 `root` 参数也需要路径。保证统一吧）
+2. rosbag数据集中图像的topic名称
+3. 其他参数（基于重投影方法的跟踪，一般用不到）
+
+示例如下：
 
 ```yaml
 type: bag
@@ -116,202 +103,59 @@ image_topic: /dvs/image_raw
 depth_map_topic: /dvs/depthmap
 pose_topic: /dvs/pose
 camera_info_topic: /dvs/camera_info
-
 ```
 
-## Running the Evaluation
+## 3.3 KLT跟踪配置文件
 
-For feature tracks evaluation run the python script `evaluate_tracks.py` 
-    
-    python evaluate_tracks.py --error_threshold 10 --tracker_type KLT --file rel/path/to/tracks.txt --dataset rel/path/to/dataset.yaml --root path/where/to/find.bag
+`--tracker_params`参数后面可选用于跟踪时的配置文件，若不指定，则默认使用 config 路径下对应的配置文件。跟踪配置文件指定KLT的窗口大小与最大金字塔层数。格式参考 config/KLT_params.yaml。
 
-this script creates two files `tracks.txt.gt.txt` and `tracks.txt.errors.txt` which contain the ground truth tracks and tracking errors
-respectively.
-In addition, it creates a folder `results` in the base folder of the tracks file, where average tracking error and feature age are stored.
-These can be found in `results/errors.txt` and `results/feature_age.txt` respectively.
 
-### Parameters
 
-* `tracker_type`:
-    * `KLT`: uses a KLT tracker on frames
-    * `reprojection`: tracks points by back-projecting them and reprojecting them with given poses.
-* `error_threshold`: Used only during visualization and plotting. Discards features if their tracking error exceeds this threshold.
+# 4、代码分析
 
-The specific tracker parameters can also be provided manually through the `--tracker_params` parameter which must 
-point to a `.yaml` file of the following form
+## 4.1 代码流程
 
-```yaml
-type: KLT # 'KLT' or 'reprojection', type of algorithm used
+**1. 特征数据处理**
 
-# parameters only for KLT
-window_size: 21 # window size of tracked patch
-num_pyramidal_layers: 1 # number of layers in pyramidal search
+1. 读取数据文件的所有特征跟踪的数据
+2. 确定第一个特征的时间戳，作为初始时刻
+3. 统计初始时刻的所有特征id，记为有效id
+4. 将所有有效的特征，根据id号，创建多个dict存储特征
+
+**2. 根据图像进行初始化KLT**
+
+1. 根据上一步获得的初始时刻，在rosbag中寻找时间戳最接近的图像frame
+2. 由于时间戳可能不同步，对于每个feature，寻找初始图像frame前后两个的位置，进行线性插值获得在图像中的位置
+3. 完成图像中的初始创建
+
+**3. 跟踪**
+
+1. rosbag数据的图像中，利用opencv的`calcOpticalFlowPyrLK` 函数进行特征跟踪。
+
+**4. 计算error**
+
+**5. 绘图等其他可选操作**
+
+
+
+## 4.2 代码局限
+
+代码中有一行提示：
+
+```
+WARNING: This package only supports evaluation of tracks which have been initialized at the same  time. All tracks except the first have been discarded.
 ```
 
-If no parameters are given, they are read from `config/`.
+这个当完成 **“特征数据处理(4.1.1)** 后，如果发现有效id的特征数量少于了总的行数，这意味着在初始化时刻的时间戳，并没有包含所有的特征id。而这个代码对后续新增的特征id不会进行跟踪。这也提示我们，在自己准备 data 数据时，一定要保证初始时刻的所有特征，要具有相同的时间戳！ 
 
-Optionally the following flags can be used:
-* `plot_3d`: Generates 3D plots of the tracks in space-time.
-* `plot_errors`: Generates plots of the tracking error and percentage of tracked features over time.
-* `video_preview`: Generates a preview video of the feature tracks with ground truth.
 
-These files will be also be written into the `results` folder and will be stored as 
-`results/3d_plot.pdf`, `results/3d_plot_with_gt.pdf`, `results/errors.pdf` and `results/preview.avi`. Previews
-can be seen in the figures below.
 
-Note that if `plot_3d` or `video_preview` is set, an image topic must be provided in the dataset configuration file.
+# 5. 其它
 
-|<img src="resources/3d_with_gt_single_method.png" height="250" align="middle"/>|<img src="resources/3d_single_method.png" height="250" align="middle"/>|
-|:---:|:---:|
-|<img src="resources/tracking_error_single_method.png" height="250" align="middle"/>|<img src="resources/viz.png" height="250" align="middle"/>|
+若使用此工具，用于学术时，注意引用作者论文！
 
-## Compare Against other Methods
+若您的某些工作，参考了我这forked后给出的注释与解释，希望可以注明出处；
 
-In addition to the evaluation script, this package also provides useful functionality to compare different tracking methods. 
-The methods are compared in terms of their tracking error over time, as well as average tracking error and feature age.
+关于事件相机的特征提取与跟踪，欢迎大家前来交流！目前正在进行相关研究。
 
-In order to do a comparison, a configuration file must be provided in the following form:
-
-```yaml
-- Our_method:
-    - [0, 255, 255]
-    - tracks/our_method/
-- Other_method:
-    - [0, 255, 255]
-    - tracks/other_method/
-...
-```
-
-Here the keys correspond to the labels associated with different methods (note underscores will be replaced with spaces).
-The first entry under a key is the color (RGB) of the method in the final plot. The second element corresponds to the folder containing
-a `tracks.txt` file.
-
-To compare different methods call the following script:
-
-    python compare_tracks.py --error_threshold 10 --root rel/path/to/tracks/directories --config rel/path/to/confing.yaml --results_directory rel/path/to/output/
-
-This script will output the following files into `rel/path/to/output/`:
-* `errors.pdf`: A plot comparing tracking error over time for the methods in the config.
-* `errors.txt`: A table of the average tracking errors for different methods.
-* `feature_age.txt`: A table of the average feature ages for different methods.
-
-As before `--error_threshold` discards tracks if their tracking error exceed this threshold.
-
-## Visualize the Tracks
-
-<img src="resources/viz.png" width="400" align="middle"/>
-
-This package has the functionality to visualize your feature tracks in an interactive manner using the `visualize.py` script.
-To do this call the following script:
-
-    python visualize.py --file rel/path/to/tracks.txt --dataset rel/path/to/ros.bag /image/topic
-    
-This starts an interactive GUI for visualizing the tracks found in `tracks.txt`, together with ground truth (if it exists in
-the same folder).
-You can interact with the visualization using the following keys:
-
-| Key | Function |
-| :---: | :---: |
-|<kbd>space</kbd> or <kbd>p</kbd>| toggle pausing|
-|<kbd>l</kbd>|toggle loop|
-|<kbd>q</kbd>|quit| 
-|<kbd>r</kbd>|reset to beginning|
-|<kbd>d / a</kbd>|step forward / backward|
-|<kbd>s / w</kbd>|step to beginning / end|
-|<kbd>e / q</kbd>|increase / decrease track history|
-
-### Parameters
-
-For more fine-grained control of the visualization the following parameters can be used:
-* `track_history_length`: length of the track history in seconds.
-* `scale`: resizes the image to show tracks at subpixel accuracy.
-* `framerate`: frame rate of the visualization
-* `speed`: speed of the visualization
-* `marker`: marker used for tracks. Needs to be either `circle` or `cross`.
-* `error_threshold`: discards features if their tracking error is above a threshold.
-* `crop_to_predictions`: crops ground truth tracks to the length of the corresponding predicted tracks.
-* `video_file`: file to write video to.
-## Plotting Data for Individual Tracks
-
-<img src="resources/track_plot.png" width="600" align="middle"/>
-
-For a more detailed analysis of the feature tracks this package provides the functionality
-to plot the tracking error for individual tracks. This can be done with the script `plot_track.py`.
-
-    python plot_track.py --file path/to/tracks.txt --id 1
-    
-This script will create a folder called `results/tracks` in the folder where the tracks are found and saves the 
-plot as `track_{track_id}.pdf`. Optionally, all feature tracks can be plotted by setting `id` to -1.
-
-The plots contain the following:
-
-* x coordinate of ground truth and estimated track
-* y coordinate of ground truth and estimated track
-* x and y tracking error, as well as total (euclidean) tracking error.
-  
-## Try it Out 
-
-If you want to try out the functionalities provided you can download example tracks and datasets from [here](http://rpg.ifi.uzh.ch/datasets/feature_tracking_analysis_example.zip).
-Download the data and unzip it into your `/tmp/` folder 
-
-```bash
-unzip ~/Downloads/feature_tracking_analysis_example.zip -d /tmp/
-```
-
-The resulting `example` folder contains the following directories:
-* `bags`: contains datasets for evaluation
-* `tracks`: contains three subfolder with tracks 
-    * `simulation_3planes`: tracks generated for simulated data by the tracker presented in Gehrig ECCV'18    
-    * `bicycles_gehrig_eccv_18`: tracks generated for real data by the tracker presented in Gehrig ECCV'18    
-    * `bicycles_kueng_iros_16`: tracks generated by the tracker presented in Kueng IROS'16
-* `dataset_params`: contains configurations for the datasets in `bags`
-* `comparison_params`: contains configurations for comparing the method in Kueng IROS'16 to the one in Gehrig ECCV'18
-* `comparison_results`: folder that will be filled with output files
-
-### Evaluation
-
-In order to run an evaluation call
-
-    python evaluate_tracks.py --error_threshold 10 --tracker_type KLT --file /tmp/example/tracks/bicycles_gehrig_eccv_18/tracks.txt --dataset /tmp/example/dataset_params/bicycles.yaml --root /tmp/example/bags --plot_3d --plot_errors --video_preview
-
-This will generate ground truth using a KLT tracker on frames and store output files in the folder `/tmp/example/tracks/bicycles_gehrig_eccv_18/results`
-Alternatively, reprojection based ground truth for the simulated dataset can be generated using the following command.
-
-    python evaluate_tracks.py --error_threshold 10 --tracker_type reprojection --file /tmp/example/tracks/simulation_3planes/tracks.txt --dataset /tmp/example/dataset_params/simulation_3planes.yaml --root /tmp/example/bags --plot_3d --plot_errors --video_preview
-    
-
-### Comparison
-
-Tracks using the method described in Kueng IROS'16 have also been generated for the `bicycles` dataset.
-In order to compare them against the other method we first need to run an evaluation on them.
-
-    python evaluate_tracks.py --error_threshold 10 --tracker_type KLT --file /tmp/example/tracks/bicycles_kueng_iros_16/tracks.txt --dataset /tmp/example/dataset_params/bicycles.yaml --root /tmp/example/bags --plot_3d --plot_errors --video_preview
-
-Now both methods can be compared using the following script:
-
-    python compare_tracks.py --error_threshold 10 --root /tmp/example/tracks/ --config /tmp/example/comparison_params/bicycles.yaml --results_directory /tmp/example/comparison_results
-
-This command writes the comparison results in the folder `/tmp/example/comparison_results`. This script outputs a plot
-showing tracking error over time which is shown below.
-
-<img src="resources/comparison_plot.png" height="250" align="left"/>
-
-|Method | Tracking Error [px] | Feature Age [s]|
-|:---:|:---:|:---|
- |Gehrig ECCV 18| 0.74|1.18|
- |Kueng IROS 16|3.59|0.56|
- 
-### Interactive Visualization
- 
-The interactive visualization for one of the tracks above can be started by using the following script
- 
-    python visualize.py --dataset /tmp/example/bags/bicycles.bag /dvs/image_raw --file /tmp/example/tracks/bicycles_gehrig_eccv_18/tracks.txt
-
-### Plotting Tracks
-
-Finally, individual tracks and tracking errors for these tracks can be plotted using the following script
-
-    python plot_track.py --file /tmp/example/tracks/bicycles_gehrig_eccv_18/tracks.txt
-    
-This will generate the plots in `/tmp/examples/tracks/bicycles_gehrig_eccv_18/results/tracks/`.
 
