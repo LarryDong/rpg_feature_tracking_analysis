@@ -56,14 +56,14 @@ def getTrackData(path, delimiter=" ", filter_too_short=False):
     return track_data
 
 def filter_first_tracks(tracks, filter_too_short=False):
-    tmin = tracks[0, 1]
-    valid_ids = np.unique(tracks[tracks[:, 1] == tmin, 0]).astype(int)
+    tmin = tracks[0, 1]			# 获得第一个feature的时间戳
+    valid_ids = np.unique(tracks[tracks[:, 1] == tmin, 0]).astype(int)		# 获得 相同时间戳 的所有的 id，作为 valid_ids
     all_ids = np.unique(tracks[:, 0]).astype(int)
     for id in all_ids:
-        if id not in valid_ids:
+        if id not in valid_ids:					# 筛除掉所有非有效的id。
             tracks = tracks[tracks[:, 0] != id]
         else:
-            if filter_too_short:
+            if filter_too_short:				# 筛除掉追踪数量小于3的有效id。
                 num_samples = len(tracks[tracks[:,0]==id])
                 if num_samples < 3:
                     tracks = tracks[tracks[:, 0] != id]

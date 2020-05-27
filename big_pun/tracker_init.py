@@ -78,14 +78,14 @@ class TrackerInitializer:
         tracks = np.genfromtxt(self.config["tracks_csv"])
 
         # check that all features start at the same timestamp, if not, discard features that occur later
-        first_len_tracks = len(tracks)
+        first_len_tracks = len(tracks)		#~ total number of features. (line number).
         valid_ids, tracks = filter_first_tracks(tracks, filter_too_short=True)
 
-        if len(tracks) < first_len_tracks:
+        if len(tracks) < first_len_tracks:			# 意味着筛掉了一些id，所以提示：非初始时刻的feature，都没有保留。
             print("WARNING: This package only supports evaluation of tracks which have been initialized at the same"
                   " time. All tracks except the first have been discarded.")
 
-        tracks_dict = {i: tracks[tracks[:, 0] == i, 1:] for i in valid_ids}
+        tracks_dict = {i: tracks[tracks[:, 0] == i, 1:] for i in valid_ids}		# 提取出每个 id 的所有track结果，保存在一个dict中。一共有 n 个dict，n即总的id数。
 
         print("[2/3] Loading frame dataset to find positions of initial tracks.")
         frame_dataset = Dataset(root, dataset_yaml, dataset_type="frames")
@@ -94,15 +94,15 @@ class TrackerInitializer:
         tracks_init = {}
         print("[3/3] Initializing tracks")
         for track_id, track in tracks_dict.items():
-            frame_dataset.set_to_first_after(track[0,0])
+            frame_dataset.set_to_first_after(track[0,0])		# 找到 第一个feature之后的第一个frame图
             t_dataset, _ = frame_dataset.current()
 
-            x_interp = np.interp(t_dataset, track[:, 0], track[:, 1])
+            x_interp = np.interp(t_dataset, track[:, 0], track[:, 1])	# 根据frame图的时间戳，和前后两次跟踪的结果，插值等到位置。
             y_interp = np.interp(t_dataset, track[:, 0], track[:, 2])
 
             tracks_init[track_id] = np.array([[t_dataset, x_interp, y_interp]])
 
-        tracks_obj = Tracks(tracks_init)
+        tracks_obj = Tracks(tracks_init)			# 打包成 Tracks类型
 
         return tracks_obj, {"frame_dataset": frame_dataset, "reference_track": tracks}
 

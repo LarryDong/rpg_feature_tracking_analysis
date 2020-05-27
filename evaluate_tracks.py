@@ -22,10 +22,13 @@ The user needs to specify the root where the rosbag containing the images/poses 
  Additionally, a configuration file for the dataset and tracker must be provided.''')
 parser.add_argument('--tracker_params', help='Params yaml-file for tracker algorithm.', default="")
 parser.add_argument('--tracker_type', help='Tracker type. Can be one of [reprojection, KLT].', default="")
+
+# 三个必填参数：root为数据集，dataset为记录信息的yaml文件，file为自己计算的feature的数据
 parser.add_argument('--root', help='Directory where datasets are found.', default="", required=True)
 parser.add_argument('--dataset', help="Params yaml-file for dataset.", default="", required=True)
 parser.add_argument('--file', help="Tracks file for ground truth computation.", default="", required=True)
 
+# 几个功能：绘制3d图/绘制误差/预览视频。生成在 result 文件下。
 parser.add_argument('--plot_3d', help="Whether to do a 3d plot.", action="store_true", default=False)
 parser.add_argument('--plot_errors', help="Tracks file giving KLT initialization.", action="store_true", default=False)
 parser.add_argument('--error_threshold', help="Error threshold. Tracks which exceed this threshold are discarded.", type=float, default=10)
@@ -34,26 +37,28 @@ parser.add_argument('--video_preview', help="Whether to create a video preview."
 
 args = parser.parse_args()
 
-if args.tracker_params == "":
-
+if args.tracker_params == "":			# 如果没有指定配置文件，则根据 type 类型，寻找默认。
     # check what the type is
     assert args.tracker_type != "", "Either tracker_type or tracker_params need to be given."
+	# python assert: assert 表达式 [, 参数]：当表达式为真时，执行；否则，输出参数
     assert args.tracker_type in ["KLT", "reprojection"], 'Tracker type must be one of [reprojection, KLT].'
-    config_dir = join(dirname(abspath(__file__)), "config")
-    args.tracker_params = join(config_dir, "%s_params.yaml" % args.tracker_type)
+    config_dir = join(dirname(abspath(__file__)), "config")		# 找到 config 路径
+    args.tracker_params = join(config_dir, "%s_params.yaml" % args.tracker_type)		# 寻找 config 路径下对应的配置文件
 else:
     assert isfile(args.tracker_params), "Tracker params do not exist."
     assert args.tracker_params.endswith(".yaml") or args.tracker_params.endswith(".yml"), \
         "Tracker params '%s 'must be a yaml file." % args.tracker_params
 
+
 with open(args.tracker_params, "r") as f:
     tracker_config = yaml.load(f, Loader=yaml.Loader)
+
 
 assert os.path.isfile(args.file), "Tracks file '%s' does not exist." % args.file
 assert "type" in tracker_config, "Tracker parameters must contain a type tag, which can be one of [reprojection, KLT]."
 tracker_init_config = {
     "tracks_csv": args.file,
-    "type": "tracks" if tracker_config["type"] == "KLT" else "depth_from_tracks"
+    "type": "tracks" if tracker_config["type"] == "KLT" else "depth_from_tracks"		# 如果参数是 KLT， 则 type 为 "tracks"
 }
 
 print("Evaluating ground truth for %s in folder %s." % (os.path.basename(args.file), os.path.dirname(args.file)))
@@ -65,7 +70,9 @@ tracks_init = TrackerInitializer(args.root, args.dataset, config=tracker_init_co
 tracker = Tracker(tracker_config)
 
 # get tracks
-tracked_features = tracker.track(tracks_init.tracks_obj, tracks_init.tracker_params)
+tracked_features = tracker.track(tracks_init.tracks_obj, tracks_init.tracker_params)	
+# 开始跟踪
+# 在 Tracker 初始化时，指定了 track 方法为：track_features_on_klt
 
 # save tracks
 out_csv = args.file + ".gt.txt"
