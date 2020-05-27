@@ -8,7 +8,7 @@ forked from **uzh-rpg/rpg_feature_tracking_analysis** [https://github.com/uzh-rp
 
 # 0、引用
 
-如果用于学术文章，请引用如下论文。（尊重作者成果，这段儿我单独拎出来这段儿）
+如果用于学术文章，请引用如下论文。（尊重作者成果，这段儿我单独拎出来）
 
 ```
 @Article{Gehrig19ijcv,
@@ -26,7 +26,7 @@ forked from **uzh-rpg/rpg_feature_tracking_analysis** [https://github.com/uzh-rp
 ```bash
 git clone feature_tracking_anlaysis
 cd feature_tracking_analysis
-virtualenv venv					# 与下一条可选
+virtualenv venv					    # 与下一条可选
 source venv/bin/activate		# 遇上一条可选
 pip install -r requirements.txt
 ```
@@ -156,6 +156,6 @@ WARNING: This package only supports evaluation of tracks which have been initial
 
 若您的某些工作，参考了我这forked后给出的注释与解释，希望可以注明出处；
 
-关于事件相机的特征提取与跟踪，欢迎大家前来交流！目前正在进行相关研究。
+关于事件相机的特征提取与跟踪，欢迎大家前来交流！我目前正在进行相关研究。
 
 
