@@ -31,6 +31,13 @@ source venv/bin/activate		# 遇上一条可选
 pip install -r requirements.txt
 ```
 
+注：除此之外，需要安装latex相关依赖，否则会在运行时报错
+> OSError: [Errno 2] No such file or directory: 'latex'
+解决办法：
+```bash
+sudo apt install texlive-latex-base texlive-latex-extra texlive-fonts-recommended dvipng 
+pip install tabulate
+```
 
 
 # 2、 运行示例
