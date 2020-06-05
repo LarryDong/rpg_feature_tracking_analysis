@@ -35,6 +35,10 @@ pip install -r requirements.txt
 
 # 2、 运行示例
 
+### 2.1 计算真值与误差
+
+无论是绘制单一误差曲线，还是进行比较，都需要首先计算真值与误差。运行 **evaluate_tracks.py** 文件。基础指令如下：
+
 ```bash
 python evaluate_tracks.py --tracker_type KLT --file rel/path/to/tracks.txt --dataset rel/path/to/dataset.yaml --root path/where/to/find.bag
 ```
@@ -43,9 +47,9 @@ python evaluate_tracks.py --tracker_type KLT --file rel/path/to/tracks.txt --dat
 
 `tracker_type`：选择使用KLT跟踪，或者重投影方式（一般不用），参数值只能是：KLT 或 reprojection
 
-`file`：需要评估的特征跟踪文件（具体格式见 **3.1 数据准备**）
+`file`：需要评估的特征跟踪文件，文件名一定要为tracks.txt（具体格式见 **3.1 数据准备**）
 
-`dataset`：配置文件，以 .yaml 或 yml 解为的配置文件（配置方式见 **3.2 数据集配置文件**）
+`dataset`：配置文件，以 .yaml 或 yml 结尾的配置文件（配置方式见 **3.2 数据集配置文件**）
 
 `root`：数据集文件，评估时根据这个数据集文件(.bag)进行计算KLT跟踪
 
@@ -55,13 +59,62 @@ python evaluate_tracks.py --tracker_type KLT --file rel/path/to/tracks.txt --dat
 
 `tracker_params`：跟踪参数，没有制定时默认采用 config 下的文件，制定了 KLT 的窗口大小、金字塔层数
 
-## 2.1 绘图
+## 2.2 绘制单一误差图
 
-运行时加上`--plot_3d` 或 `--plot_errors` 等参数，可以绘制好看的 pdf 图像。
+在2.1的基础上，运行时加上`--plot_3d` 或 `--plot_errors` 等参数，可以绘制好看的 pdf 图像。
+
+使用`--plot_errors`这个参数时，需要安装latex相关依赖，eth没有给出，经过我测试，需要安装的内容写在了 **1、安装** 当中
 
 另外还有可选参数 `video_preview`，生成带有 gt 的视频。
 
 运行结果将在 `file` 文件所在文件中，创建 results 文件，进行保存。
+
+## 2.3 方法比较
+
+如果需要比较两种方法，需要利用 **compare_tracks.py** 这个文件，具体指令形式为：
+
+```bash
+python compare_tracks.py --error_threshold 10 --root /path/to/tracks/dir --config /path/to/compare_config.yaml --results_directory /path/to/save/results
+```
+
+需要提供的参数有：
+
+`--root`：根文件，包含有track数据等文件的目录
+
+`--config`：比较方法时的配置文件，具体格式件见 **3.4**
+
+`--results_directory`：运行结果保存文件，包括误差、特征平均时长、曲线图等
+
+**注：在运行时需要首先生成每种方法对应的真值与误差数据，然后才能运行，否则会提示找不到gt文件**
+
+个人采用的文件目录：
+
+```bash
+root
+	-dataset.yaml		# 计算gt时需要用到，记录dataset的相关信息，对应 evaluate_tracks 的--dataset 参数
+	-config.yaml		# 进行比较时用到，记录方法比较的文件目录，对应 compare_tracks.py 的--config 参数
+	/method1_dir		# 需要比较方法1的目录
+		/dataset_1		# 第一个数据集运行结果目录
+			-tracks.txt	# 运行结果
+		/dataset_2		# 第二个数据集运行结果目录
+			-tracks.txt
+		...
+	/method2_dir
+	...
+	/results			# 结果保存目录
+```
+
+运行指令：
+
+```bash
+python evaluate_tracks.py --tracker_type KLT --file root/method1_dir/dataset_1/tracks.txt --dataset root/dataset.yaml --root path/to/rosbag.bag		# 根据method1跟踪结果生成error和gt
+python evaluate_tracks.py --tracker_type KLT --file root/method1_dir/dataset_2/tracks.txt --dataset root/dataset.yaml --root path/to/rosbag.bag		# 根据method2跟踪结果生成error和gt
+python compare_tracks.py --error_threshold 10 --root root --config root/config.yaml --results_directory root/results			# 进行比较
+```
+
+**注意：dataset.yaml 中的数据集名称与实际给的要统一**
+
+ 
 
 
 
@@ -110,6 +163,20 @@ camera_info_topic: /dvs/camera_info
 `--tracker_params`参数后面可选用于跟踪时的配置文件，若不指定，则默认使用 config 路径下对应的配置文件。跟踪配置文件指定KLT的窗口大小与最大金字塔层数。格式参考 config/KLT_params.yaml。
 
 
+
+## 3.4 compare的配置文件
+
+用于比较多种方法时的配置文件，以.yml/yaml结尾。每种方法3行，分别是：方法名称、颜色RGB、数据路径（路径下需包含原始数据，以及evaluate时生成的gt和error文件）。注意2、3行开头是4个空格。
+
+```
+- Our_method:
+    - [0, 255, 255]
+    - tracks/our_method/
+- Other_method:
+    - [0, 255, 255]
+    - tracks/other_method/
+...
+```
 
 # 4、代码分析
 
