@@ -29,6 +29,9 @@ cd feature_tracking_analysis
 virtualenv venv					# 与下一条可选
 source venv/bin/activate		# 遇上一条可选
 pip install -r requirements.txt
+
+# latex 依赖项，运行 compare_tracks.py 时需要
+sudo apt install texlive-fonts-recommended texlive-fonts-extra dvipng
 ```
 
 
