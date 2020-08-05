@@ -26,8 +26,8 @@ forked from **uzh-rpg/rpg_feature_tracking_analysis** [https://github.com/uzh-rp
 ```bash
 git clone feature_tracking_anlaysis
 cd feature_tracking_analysis
-virtualenv venv					# 与下一条可选
-source venv/bin/activate		# 遇上一条可选
+virtualenv venv				# 与下一条可选
+source venv/bin/activate		# 与上一条可选
 pip install -r requirements.txt
 
 # latex 依赖项，运行 compare_tracks.py 时需要
@@ -210,13 +210,15 @@ camera_info_topic: /dvs/camera_info
 
 ## 4.2 代码局限
 
-代码中有一行提示：
+1. 代码中有一行提示：
 
 ```
 WARNING: This package only supports evaluation of tracks which have been initialized at the same  time. All tracks except the first have been discarded.
 ```
 
 这个当完成 **“特征数据处理(4.1.1)** 后，如果发现有效id的特征数量少于了总的行数，这意味着在初始化时刻的时间戳，并没有包含所有的特征id。而这个代码对后续新增的特征id不会进行跟踪。这也提示我们，在自己准备 data 数据时，一定要保证初始时刻的所有特征，要具有相同的时间戳！ 
+
+2. 特征时间过短时这个工具处理数据会有问题，具体参考我在原repo下提出的issue：[https://github.com/uzh-rpg/rpg_feature_tracking_analysis/issues/3]
 
 
 
